@@ -1,0 +1,36 @@
+﻿{
+    "id":  "37447a59-b131-4e9c-83a3-a7856bfc30ff",
+    "name":  "HelloWorldToo",
+    "publisher":  "Freddy Kristiansen",
+    "version":  "1.0.0.0",
+    "brief":  "HelloWorldToo app",
+    "description":  "HelloWorldToo app with functionality to greet users",
+    "privacyStatement":  "https://github.com/BusinessCentralApps/HelloWorldToo.AppSource",
+    "EULA":  "https://github.com/BusinessCentralApps/HelloWorldToo.AppSource",
+    "help":  "https://github.com/BusinessCentralApps/HelloWorldToo.AppSource",
+    "url":  "https://github.com/BusinessCentralApps/HelloWorldToo.AppSource",
+    "contextSensitiveHelpUrl":  "https://github.com/BusinessCentralApps/HelloWorldToo.AppSource",
+    "logo":  "logo256x240.png",
+    "dependencies":  [
+
+                     ],
+    "screenshots":  [
+
+                    ],
+    "platform":  "1.0.0.0",
+    "application":  "20.0.0.0",
+    "idRanges":  [
+                     {
+                         "from":  70074150,
+                         "to":  70074158
+                     }
+                 ],
+    "features":  [
+        "TranslationFile"
+    ],
+    "resourceExposurePolicy":  {
+                                   "allowDebugging":  true,
+                                   "allowDownloadingSource":  false,
+                                   "includeSourceInSymbolFile":  false
+                               }
+}
