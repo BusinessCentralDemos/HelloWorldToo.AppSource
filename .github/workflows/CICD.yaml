@@ -1,4 +1,4 @@
-name: ' CI/CD'
+﻿name: ' CI/CD'
 
 on:
   workflow_dispatch:
@@ -8,12 +8,9 @@ on:
       - completed
   push:
     paths-ignore:
-      - '**.md'
-      - '.github/workflows/*.yaml'
-      - '!.github/workflows/CICD.yaml'
+      - 'README.md'
+      - '.github/**'
     branches: [ 'main', 'release/*', 'feature/*' ]
-
-run-name: ${{ fromJson(format('["","Check pull request from {1}/{2}{0} {3}"]',':',github.event.workflow_run.head_repository.owner.login,github.event.workflow_run.head_branch,github.event.workflow_run.display_title))[github.event_name == 'workflow_run'] }}
 
 permissions:
   contents: read
@@ -25,13 +22,12 @@ defaults:
   run:
     shell: PowerShell
 
-env:
-  workflowDepth: 1
-
 jobs:
   Initialization:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: [ windows-latest ]
+    env:
+      workflowDepth: 1
     outputs:
       telemetryScopeJson: ${{ steps.init.outputs.telemetryScopeJson }}
       settings: ${{ steps.ReadSettings.outputs.SettingsJson }}
@@ -71,10 +67,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          lfs: true
-    
-      - name: Download Pull Request Changes
+
+      - name: 'Download Pull Request Changes'
         if: github.event_name == 'workflow_run'
         uses: actions/github-script@v6
         with:
@@ -99,8 +93,6 @@ jobs:
 
       - name: Apply Pull Request Changes
         if: github.event_name == 'workflow_run'
-        env:
-          PRREPOFULLNAME: ${{ github.event.workflow_run.head_repository.full_name }}
         run: |
           $ErrorActionPreference = "STOP"
           $location = (Get-Location).path
@@ -117,7 +109,7 @@ jobs:
             $newFolder = [System.IO.Path]::GetDirectoryName($newPath)
             $extension = [System.IO.Path]::GetExtension($path)
             $filename = [System.IO.Path]::GetFileName($path)
-            if ($ENV:PRREPOFULLNAME -ne $ENV:GITHUB_REPOSITORY) {
+            if ('${{ github.event.workflow_run.head_repository.full_name }}' -ne $ENV:GITHUB_REPOSITORY) {
               if ($extension -eq '.ps1' -or $extension -eq '.yaml' -or $extension -eq '.yml' -or $filename -eq "CODEOWNERS") {
                 throw "Pull Request containing changes to scripts, workflows or CODEOWNERS are not allowed from forks."
               }
@@ -139,24 +131,23 @@ jobs:
               Copy-Item $path -Destination $newFolder -Force
             }
           }
-          Remove-Item -Path $prfolder -recurse -force
 
       - name: Initialize the workflow
         id: init
-        uses: freddydk/AL-Go-Actions/WorkflowInitialize@main
+        uses: microsoft/AL-Go-Actions/WorkflowInitialize@v2.1
         with:
           eventId: "DO0091"
 
       - name: Read settings
         id: ReadSettings
-        uses: freddydk/AL-Go-Actions/ReadSettings@main
+        uses: microsoft/AL-Go-Actions/ReadSettings@v2.1
         with:
           parentTelemetryScopeJson: ${{ steps.init.outputs.telemetryScopeJson }}
           getProjects: 'Y'
           getEnvironments: '*'
 
       - name: Read secrets
-        uses: freddydk/AL-Go-Actions/ReadSecrets@main
+        uses: microsoft/AL-Go-Actions/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}
         with:
@@ -241,13 +232,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Read settings
-        uses: freddydk/AL-Go-Actions/ReadSettings@main
+        uses: microsoft/AL-Go-Actions/ReadSettings@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           get: TemplateUrl
 
       - name: Check for updates to AL-Go system files
-        uses: freddydk/AL-Go-Actions/CheckForUpdates@main
+        uses: microsoft/AL-Go-Actions/CheckForUpdates@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           templateUrl: ${{ env.TemplateUrl }}
@@ -320,14 +311,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           lfs: true
-    
-      - name: Download thisbuild artifacts
-        if: env.WorkflowDepth > 1
+
+      - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           path: '${{ github.workspace }}\.dependencies'
 
-      - name: Download Pull Request Changes
+      - name: 'Download Pull Request Changes'
         if: github.event_name == 'workflow_run'
         uses: actions/github-script@v6
         with:
@@ -352,8 +342,6 @@ jobs:
 
       - name: Apply Pull Request Changes
         if: github.event_name == 'workflow_run'
-        env:
-          PRREPOFULLNAME: ${{ github.event.workflow_run.head_repository.full_name }}
         run: |
           $ErrorActionPreference = "STOP"
           $location = (Get-Location).path
@@ -370,7 +358,7 @@ jobs:
             $newFolder = [System.IO.Path]::GetDirectoryName($newPath)
             $extension = [System.IO.Path]::GetExtension($path)
             $filename = [System.IO.Path]::GetFileName($path)
-            if ($ENV:PRREPOFULLNAME -ne $ENV:GITHUB_REPOSITORY) {
+            if ('${{ github.event.workflow_run.head_repository.full_name }}' -ne $ENV:GITHUB_REPOSITORY) {
               if ($extension -eq '.ps1' -or $extension -eq '.yaml' -or $extension -eq '.yml' -or $filename -eq "CODEOWNERS") {
                 throw "Pull Request containing changes to scripts, workflows or CODEOWNERS are not allowed from forks."
               }
@@ -392,16 +380,15 @@ jobs:
               Copy-Item $path -Destination $newFolder -Force
             }
           }
-          Remove-Item -Path $prfolder -recurse -force
 
       - name: Read settings
-        uses: freddydk/AL-Go-Actions/ReadSettings@main
+        uses: microsoft/AL-Go-Actions/ReadSettings@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           project: ${{ matrix.project }}
 
       - name: Read secrets
-        uses: freddydk/AL-Go-Actions/ReadSecrets@main
+        uses: microsoft/AL-Go-Actions/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}
         with:
@@ -411,31 +398,13 @@ jobs:
 
       - name: Run pipeline
         id: RunPipeline
-        uses: freddydk/AL-Go-Actions/RunPipeline@main
+        uses: microsoft/AL-Go-Actions/RunPipeline@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           Project: ${{ matrix.project }}
           ProjectDependenciesJson: ${{ needs.Initialization.outputs.projectDependenciesJson }}
           settingsJson: ${{ env.Settings }}
           SecretsJson: ${{ env.RepoSecrets }}
-
-      - name: Upload thisbuild artifacts - apps
-        if: env.WorkflowDepth > 1
-        uses: actions/upload-artifact@v3
-        with:
-          name: 'thisbuild-${{ matrix.project }}-Apps'
-          path: '${{ matrix.project }}/.buildartifacts/Apps/'
-          if-no-files-found: ignore
-          retention-days: 1
-
-      - name: Upload thisbuild artifacts - test apps
-        if: env.WorkflowDepth > 1
-        uses: actions/upload-artifact@v3
-        with:
-          name: 'thisbuild-${{ matrix.project }}-TestApps'
-          path: '${{ matrix.project }}/.buildartifacts/TestApps/'
-          if-no-files-found: ignore
-          retention-days: 1
 
       - name: Calculate Artifact names
         id: calculateArtifactNames
@@ -444,24 +413,17 @@ jobs:
           $ErrorActionPreference = "STOP"
           $settings = '${{ env.Settings }}' | ConvertFrom-Json
           $project = '${{ matrix.project }}'
-          if ("$ENV:GITHUB_EVENT_NAME" -eq 'workflow_run') {
-            $event = Get-Content $ENV:GITHUB_EVENT_PATH -Encoding UTF8 | ConvertFrom-Json
-            $ref = "PR$($event.workflow_run.pull_requests[0].number)"
-          }
-          else {
-            $ref = "$ENV:GITHUB_REF_NAME".Replace('/','_')
-          }
           if ($project -eq ".") { $project = $settings.RepoName }
-          'Apps','Dependencies','TestApps','TestResults','BcptTestResults','BuildOutput','ContainerEventLog' | ForEach-Object {
+          'Apps','Dependencies','TestApps','TestResults','BcptTestResults','BuildOutput' | ForEach-Object {
             $name = "$($_)ArtifactsName"
-            $value = "$($project.Replace('\','_'))-$($ref)-$_-$($settings.repoVersion).$($settings.appBuild).$($settings.appRevision)"
+            $value = "$($project.Replace('\','_'))-$("$ENV:GITHUB_REF_NAME".Replace('/','_'))-$_-$($settings.repoVersion).$($settings.appBuild).$($settings.appRevision)"
             Add-Content -Path $env:GITHUB_OUTPUT -Value "$name=$value"
             Add-Content -Path $env:GITHUB_ENV -Value "$name=$value"
           }
 
       - name: Publish artifacts - apps
         uses: actions/upload-artifact@v3
-        if: github.ref_name == 'main' || startswith(github.ref_name, 'release/')
+        if: (github.event_name != 'workflow_run') && (github.ref_name == 'main' || startswith(github.ref_name, 'release/'))
         with:
           name: ${{ env.appsArtifactsName }}
           path: '${{ matrix.project }}/.buildartifacts/Apps/'
@@ -469,7 +431,7 @@ jobs:
 
       - name: Publish artifacts - dependencies
         uses: actions/upload-artifact@v3
-        if: github.ref_name == 'main' || startswith(github.ref_name, 'release/')
+        if: (github.event_name != 'workflow_run') && (github.ref_name == 'main' || startswith(github.ref_name, 'release/'))
         with:
           name: ${{ env.dependenciesArtifactsName }}
           path: '${{ matrix.project }}/.buildartifacts/Dependencies/'
@@ -477,7 +439,7 @@ jobs:
 
       - name: Publish artifacts - test apps
         uses: actions/upload-artifact@v3
-        if: github.ref_name == 'main' || startswith(github.ref_name, 'release/')
+        if: (github.event_name != 'workflow_run') && (github.ref_name == 'main' || startswith(github.ref_name, 'release/'))
         with:
           name: ${{ env.testAppsArtifactsName }}
           path: '${{ matrix.project }}/.buildartifacts/TestApps/'
@@ -489,14 +451,6 @@ jobs:
         with:
           name: ${{ env.buildOutputArtifactsName }}
           path: '${{ matrix.project }}/BuildOutput.txt'
-          if-no-files-found: ignore
-
-      - name: Publish artifacts - container event log
-        uses: actions/upload-artifact@v3
-        if: (failure()) && (hashFiles(format('{0}/ContainerEventLog.evtx',matrix.project)) != '')
-        with:
-          name: ${{ env.ContainerEventLogArtifactsName }}
-          path: '${{ matrix.project }}/ContainerEventLog.evtx'
           if-no-files-found: ignore
 
       - name: Publish artifacts - test results
@@ -518,7 +472,7 @@ jobs:
       - name: Analyze Test Results
         id: analyzeTestResults
         if: success() || failure()
-        uses: freddydk/AL-Go-Actions/AnalyzeTests@main
+        uses: microsoft/AL-Go-Actions/AnalyzeTests@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           Project: ${{ matrix.project }}
@@ -547,7 +501,7 @@ jobs:
 
       - name: Cleanup
         if: always()
-        uses: freddydk/AL-Go-Actions/PipelineCleanup@main
+        uses: microsoft/AL-Go-Actions/PipelineCleanup@v2.1
         with:
           parentTelemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
           Project: ${{ matrix.project }}
@@ -577,10 +531,10 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "envName=$envName"
 
       - name: Read settings
-        uses: freddydk/AL-Go-Actions/ReadSettings@main
+        uses: microsoft/AL-Go-Actions/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: freddydk/AL-Go-Actions/ReadSecrets@main
+        uses: microsoft/AL-Go-Actions/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}
         with:
@@ -642,7 +596,7 @@ jobs:
           Write-Host "projects=$projects"
 
       - name: Deploy
-        uses: freddydk/AL-Go-Actions/Deploy@main
+        uses: microsoft/AL-Go-Actions/Deploy@v2.1
         env:
           authContext: ${{ steps.authContext.outputs.authContext }}
         with:
@@ -670,10 +624,10 @@ jobs:
           path: '${{ github.workspace }}\.artifacts'
 
       - name: Read settings
-        uses: freddydk/AL-Go-Actions/ReadSettings@main
+        uses: microsoft/AL-Go-Actions/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: freddydk/AL-Go-Actions/ReadSecrets@main
+        uses: microsoft/AL-Go-Actions/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}
         with:
@@ -690,7 +644,7 @@ jobs:
           Write-Host "deliveryContext=$deliveryContext"
 
       - name: Deliver
-        uses: freddydk/AL-Go-Actions/Deliver@main
+        uses: microsoft/AL-Go-Actions/Deliver@v2.1
         env:
           deliveryContext: ${{ steps.deliveryContext.outputs.deliveryContext }}
         with:
@@ -726,7 +680,7 @@ jobs:
 
       - name: Finalize the workflow
         id: PostProcess
-        uses: freddydk/AL-Go-Actions/WorkflowPostProcess@main
+        uses: microsoft/AL-Go-Actions/WorkflowPostProcess@v2.1
         with:
           eventId: "DO0091"
           telemetryScopeJson: ${{ needs.Initialization.outputs.telemetryScopeJson }}
